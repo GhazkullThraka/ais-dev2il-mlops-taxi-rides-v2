@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 def train_model(model_type: str):
-  data_file = "data/all.taxi-rides.parquet"
+  data_file = "data/taxi-rides-training-data.parquet"
   logger.info(f"Processing taxi ride data from: {data_file}")
   data = pandas.read_parquet(data_file)
 
