@@ -17,9 +17,6 @@ jobs:
       MLFLOW_TRACKING_URI: ${{ vars.MLFLOW_TRACKING_URI }}
       MLFLOW_TRACKING_USERNAME: ${{ vars.MLFLOW_TRACKING_USERNAME }}
       MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      # DVC S3 remote uses the same DagsHub token
-      AWS_ACCESS_KEY_ID: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +28,10 @@ jobs:
         run: uv sync
 
       - name: Pull data with DVC
-        run: uv run dvc pull
+        run: |
+          uv run dvc remote modify --local dagshub access_key_id ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+          uv run dvc remote modify --local dagshub secret_access_key ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+          uv run dvc pull
 
       - name: Train model (${{ matrix.model_type }})
         run: uv run outlier_detector_training.py ${{ matrix.model_type }}
