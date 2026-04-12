@@ -37,6 +37,11 @@ This repository focuses on these MLOps topics
     - Understand how to work with Parquet files in Python using pandas
     - Have the pre-processed taxi ride data from DVC available in the data folder
 - Data Management via DVC (via dagshub)
+  - Goals
+    - Understand what DVC is and why it is useful for data management in ML projects
+    - Initially load the "data" folder from my DVC repository on DagsHub to be used in the students repo
+    - Understand what dagshub is (keep it only scoped to DVC data storage for the moment). Students have their own linked Dagshub repository
+    - Add the files to the repo using DVC and push them to their remote DVC storage on DagsHub
 - Training of a model. The training itself is not the focus. It's more about how to store a model in a simple way (e.g. pickling it)
 - Usage of MLFlow for experiment tracking (dagshub based)
 - Usage of MLFlow for model registry

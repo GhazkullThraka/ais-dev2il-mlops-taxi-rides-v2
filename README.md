@@ -171,3 +171,183 @@ Explore the Parquet file without writing a single line of Python:
 
 > Data Wrangler lets you explore visually and then hands you the Python code for free —
 > great for getting started with a new dataset fast.
+
+---
+
+## 🗄️ Exercise 2: Data Management with DVC
+
+You now have Parquet files — great format, right size. But here's the next problem: **how do you share large data files with your team?**
+
+Git is designed for code, not data. Try to `git add` a folder with 30 Parquet files and Git will dutifully track every byte forever, bloating your repository. There has to be a better way.
+
+Enter **DVC** (Data Version Control) — it works alongside Git. Git tracks your code and tiny pointer files. DVC tracks your actual data files in a separate storage. Same workflow, sane repository.
+
+### Step 1: Get the data
+
+The file `example-data/data.zip` is already in your repository. Extract it into a `data` folder in the root of your repository.
+If you are using PyCharm, make sure to **not** add the files to Git.
+
+Your folder structure should look like this:
+```
+data/
+  2025-01-01.taxi-rides.parquet
+  2025-01-02.taxi-rides.parquet
+  ...
+```
+
+### Step 2: Create your DagsHub repository
+
+[DagsHub](https://dagshub.com) is a collaboration platform built for data scientists and ML engineers. 
+Think of it as GitHub — but with built-in support for large data files, experiment tracking, 
+and model registries. For now we'll use it purely as a **DVC remote storage** — a place to store and share our Parquet files.
+
+1. Go to [https://dagshub.com](https://dagshub.com) and sign in or up with your GitHub account
+2. Click **"Create Repository"** → **"Connect a repository"** → select your GitHub fork
+3. In your new DagsHub repo, go to **Your Settings** (in your profile menu in the upper right corner) 
+   → *Tokens** and copy the default access token. You will need it a bit later.
+
+### Step 3: Initialise DVC
+
+```bash
+uv run dvc init
+uv run dvc config core.autostage true
+```
+
+This creates a `.dvc` folder (similar to `.git`). The `autostage` setting tells DVC to automatically stage `.dvc` pointer files in Git when you run `dvc add` — one less thing to remember.
+
+### Step 4: Configure the DVC remote
+
+Run these commands. Don't forget to replace the placeholders with your actual values using your username, repository name and the token
+that you copied above.  Alternatively you can go to your DagsHub repository **Remote** → **DVC** and copy the exact commands from there.
+
+```bash
+uv run dvc remote add origin s3://dvc
+uv run dvc remote modify origin endpointurl https://dagshub.com/<YOUR USERNAME>/<YOUR REPO>.s3
+uv run dvc remote modify origin --local access_key_id <YOUR TOKEN>
+uv run dvc remote modify origin --local secret_access_key <YOUR TOKEN>
+uv run dvc remote default origin
+```
+
+Here's what each command does:
+
+- **`dvc remote add origin s3://dvc`** — registers a new DVC remote called `origin` using the S3 protocol.
+- **`dvc remote modify origin endpointurl ...`** — tells DVC where the S3 storage actually lives. DagsHub provides an S3-compatible HTTP endpoint for every repository.
+- **`dvc remote modify origin --local access_key_id ...`** — sets your DagsHub token as the S3 access key. The `--local` flag stores this in `.dvc/config.local`, which is gitignored and **never committed**.
+- **`dvc remote modify origin --local secret_access_key ...`** — same token again, used as the S3 secret key. DagsHub uses one token for both.
+- **`dvc remote default origin`** — marks `origin` as the default remote. Without this, you'd have to specify `-r origin` on a lot of commands
+
+### Step 5: Track Parquet Files
+
+```bash
+uv run dvc add data/*.parquet
+```
+
+DVC creates one `.dvc` pointer file per Parquet file (e.g. `data/2025-01-01.taxi-rides.parquet.dvc`) and adds `data/*.parquet` to `data/.gitignore` automatically.
+Look them up in the data folder. Also have a look at the contents of `data/.gitignore`
+
+Add the data folder to Git:
+
+```bash
+git add data
+```
+
+Run `git status` — Git now tracks all the `.dvc` pointer files and the updated `.gitignore`, but **not** the raw Parquet files. 
+Each pointer file is very small and tells DVC where to find the actual data. The Parquet files are still there on your disk, but Git is 
+blissfully unaware of them and will not store them.
+
+### Step 6: Check what DVC wants to push
+
+Before pushing, check which files DVC needs to upload to the remote:
+
+```bash
+uv run dvc status --cloud
+```
+
+You should see all 30 Parquet files listed as `new file` — they exist locally but haven't been pushed yet. 
+After `dvc push` in the next step, running this again will show nothing, meaning everything is in sync.
+
+### Step 7: Push the data
+
+```bash
+uv run dvc push
+```
+
+Your Parquet files are now stored in your DagsHub remote. DVC uploads them directly to the remote storage without going through Git at all.
+
+### Step 8: Commit the pointer files to Git
+
+```bash
+git add data/
+git commit -m "Track data files with DVC"
+git push
+```
+
+### Step 9: "Gone but not Forgotten"
+
+Delete all the Parquet files from your `data` folder:
+
+```bash
+rm data/*.parquet
+```
+
+Run `dvc pull` to restore them:
+
+```bash
+uv run dvc pull
+```
+
+🎉 The files are back. Your data is safe, versioned and shareable.
+
+> **💡 The DVC Workflow — every time you pull or switch branches**
+>
+> Whenever you run `git pull` or `git checkout <branch>`, Git updates the `.dvc` pointer files — but **not** the actual data files. You need to follow up with:
+>
+> ```bash
+> git pull          # updates .dvc pointer files
+> uv run dvc pull   # downloads the matching data from the remote
+> ```
+>
+> Think of `.dvc` files as Git's way of saying *"the data should look like this"* — and `dvc pull` as the step that makes it actually happen.
+
+### 🚀 Level Up
+
+#### Challenge 1: Gone but not Forgotten (Remote Edition)
+
+On your **pair's machine**, clone your GitHub fork, configure the DVC remote credentials and run:
+
+```bash
+uv run dvc pull
+```
+
+Does it work? Your pair should now have the exact same data as you — pulled from *your* DagsHub remote. This is how teams share data without emailing zip files around.
+
+#### Challenge 2: Catch the Change
+
+Let's simulate updating your dataset. Create a small Python script that:
+1. Loads `data/2025-01-01.taxi-rides.parquet`
+2. Filters out all rows where `outlier` is `True`
+3. Saves it back to the same file
+
+Now use DVC to detect what changed:
+
+```bash
+uv run dvc status
+```
+
+You should now see that the file `data/2025-01-01.taxi-rides.parquet` has changed locally. 
+DVC detects this because the hash of the file content has changed. In order to get Git and 
+the DVC remote back in sync, you need to add the updated file to DVC, push it to the remote, and commit the pointer file to Git.
+
+Then make sure everything lands correctly in both DVC and Git:
+
+```bash
+uv run dvc add data/2025-01-01.taxi-rides.parquet
+uv run dvc push
+git add data/2025-01-01.taxi-rides.parquet.dvc
+git commit -m "Update data: filter outliers, add February data"
+git push
+```
+
+🤔 **What happens if you forget to `dvc push` before `git push`?**
+Your teammate runs `dvc pull` and gets an error — the pointer in Git points to 
+data that doesn't exist in the remote yet. Always push DVC before Git!
