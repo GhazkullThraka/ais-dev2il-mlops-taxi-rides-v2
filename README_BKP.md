@@ -72,3 +72,12 @@ Introduce Training Pipeline
 Rename all files to simple names to type
 
 Introduce the API Pipeline
+
+--- 
+
+what to remove on main 
+- data directory
+- outlier_detector_training.py
+- download_model.py
+- .model-version
+- 

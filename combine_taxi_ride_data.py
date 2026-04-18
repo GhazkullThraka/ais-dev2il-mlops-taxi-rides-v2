@@ -11,12 +11,13 @@ OUTPUT_FILE = Path("data/taxi-rides-training-data.parquet")
 OVERWRITE = True
 
 
-def find_input_files(input_dir: Path, date: str | None = None) -> list[Path]:
+def find_input_files(input_dir: Path, dates: list[str] | None = None) -> list[Path]:
     if not input_dir.exists() or not input_dir.is_dir():
         raise FileNotFoundError(f"Input directory not found: {input_dir}")
 
-    if date:
-        filename_pattern = re.compile(rf"{re.escape(date)}\.taxi-rides\.parquet$")
+    if dates:
+        pattern_str = "|".join(re.escape(d) for d in dates)
+        filename_pattern = re.compile(rf"(?:{pattern_str})\.taxi-rides\.parquet$")
     else:
         filename_pattern = re.compile(r"\d{4}-\d{2}-\d{2}\.taxi-rides\.parquet$")
 
@@ -34,13 +35,13 @@ def combine_parquet_files(input_files: list[Path]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True, sort=False)
 
 
-def main(date: str | None = None) -> None:
+def main(dates: list[str] | None = None) -> None:
     if OUTPUT_FILE.exists() and not OVERWRITE:
         raise FileExistsError(
             f"Output file already exists: {OUTPUT_FILE}."
         )
 
-    input_files = find_input_files(INPUT_DIR, date)
+    input_files = find_input_files(INPUT_DIR, dates)
     combined = combine_parquet_files(input_files)
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -54,5 +55,5 @@ def main(date: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    date = sys.argv[1] if len(sys.argv) > 1 else None
-    main(date)
+    dates = sys.argv[1:] if len(sys.argv) > 1 else None
+    main(dates)

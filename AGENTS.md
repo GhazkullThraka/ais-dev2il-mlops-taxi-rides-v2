@@ -43,7 +43,11 @@ This repository focuses on these MLOps topics
     - Understand what dagshub is (keep it only scoped to DVC data storage for the moment). Students have their own linked Dagshub repository
     - Add the files to the repo using DVC and push them to their remote DVC storage on DagsHub
 - Training of a model. The training itself is not the focus. It's more about how to store a model in a simple way (e.g. pickling it)
+  - Models can be trained by students by running it on the local machine
+  - Models are stored in the models folder
 - Usage of MLFlow for experiment tracking (dagshub based)
+  - MLFlow is used for automatic experiment tracking
+  - Students can find experiments, models and metrics in the MLFlow UI on DagsHub
 - Usage of MLFlow for model registry
 - GitHub Actions Workflow for training the model and registering it in the MLFlow model registry
 - Usage of the model in a simple FastAPI app
