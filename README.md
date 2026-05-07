@@ -163,11 +163,11 @@ Explore the Parquet file without writing a single line of Python:
 1. In PyCharm's **Project** view, open `example-data/2025-01-01.taxi-rides.parquet`
 2. Click **"Edit in Data Wrangler"**
 3. Try some transformations:
-   - Filter out rows where `outlier` is `True`
+   - Filter out rows where `trip_distance` is larger than `1` mile
    - Sort by `trip_distance` descending
    - Drop the `ride_time` column
 4. Click **"Export"** to generate a Python script from your actions
-5. Run the generated script with `uv run <script_name>.py`
+5. Run the generated script with `uv run <script_name>.py` (in order to see something you need to output the data, e.g. via `print(df_dw.describe())`)
 
 > Data Wrangler lets you explore visually and then hands you the Python code for free —
 > great for getting started with a new dataset fast.
