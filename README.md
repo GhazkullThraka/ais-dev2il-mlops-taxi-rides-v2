@@ -567,7 +567,7 @@ export MLFLOW_TRACKING_PASSWORD=...
 ### Step 2: Add a guard for missing credentials
 
 If any of these variables are missing, the training script will fail with a confusing MLflow error
-deep in the stack trace. Add a check at the top of `train_model()` that fails fast with a clear message:
+deep in the stack trace. Add a check before the `train_model` function that fails fast with a clear message:
 
 ```python
 REQUIRED_ENV_VARS = ["MLFLOW_TRACKING_URI", "MLFLOW_TRACKING_USERNAME", "MLFLOW_TRACKING_PASSWORD"]
@@ -608,7 +608,6 @@ with mlflow.start_run():
     elif model_type == 'logistic_regression':
         model, metadata = train_logistic_regression_classifier(DATA_FILE)
     logger.info("Model training completed")
-    logger.info(metadata)
 ```
 
 Let's break down what's happening:
@@ -632,11 +631,11 @@ uv run outlier_detector_training.py random_forest
 
 Now open your DagsHub repository and click the **Experiments** tab. Hit **Go to MLflow UI**. 
 You should see a `random_forest`
-experiment with one run. Click into it — explore the **Parameters**, **Metrics**, and **Logged Models** tabs.
+experiment with one run. Click into it — explore the **Parameters**, **Metrics**, and **Logged Models** sections.
 
 Notice what `autolog()` captured without you writing a single extra line:
 - All hyperparameters of the `RandomForestClassifier`
-- Accuracy, precision, recall, f1 for both classes
+- Accuracy, precision, recall and f1 metrics
 - The trained model itself
 
 Now change the data considered for training using the `combine_taxi_ride_data.py` script to include 3 days, and run the training again. 
@@ -670,13 +669,14 @@ in the upper right corner.
 Right now the `.metadata.json` files live on your local disk — separate from the MLflow run
 that produced them. Log it as **artifact** so it's permanently attached to the run.
 
-Add these lines inside `with mlflow.start_run():`, after saving the files:
+Make sure that the creation of the metadata file happens inside `with mlflow.start_run():` (take care of proper indentation) 
+and after saving the metadata file, call
 
 ```python
 mlflow.log_artifact(metadata_output_file)
 ```
 
-Re-run training and find the files under the **Artifacts** tab of your run in the MLFlow UI.
+Re-run training and find the file under the **Artifacts** tab of your run in the MLFlow UI.
 
 #### Challenge 2: Your Own Metrics
 
@@ -699,7 +699,7 @@ Re-run all three model types, look at them and compare the metric values for the
 
 MLflow ships with a CLI that lets you query your tracking server directly from the terminal. The best part: it uses 
 **the exact same environment variables** you already have set — `MLFLOW_TRACKING_URI`, `MLFLOW_TRACKING_USERNAME`, and `MLFLOW_TRACKING_PASSWORD`. 
-No extra configuration needed.
+No extra configuration needed (as long as you stay in the terminal, where you'be set those env vars, which you did in earlier).
 
 **List all experiments:**
 
