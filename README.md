@@ -772,7 +772,9 @@ You need to create a file called `.model-version` in the root of your repository
 familiar — it's exactly the same idea as `.python-version`, which `uv` uses to know which Python
 version to use. This file pins which model version your application should use.
 
-Create the file and put just the version number inside:
+> Note: This is something that we build - not a MLflow feature!
+
+Create the file and put just the version number inside, e.g.:
 
 ```
 1
@@ -1027,10 +1029,32 @@ uv run download_model.py
 It still works — but now it always pulls whatever version is tagged `@champion`. Promoting a new model to production is just moving the alias 
 in the UI — no code change, no file update, no commit needed.
 
+Discuss with your partner what you just did! What are the pros and cons of using an alias like this instead of a fixed version number in 
+`.model-version`? 
+
+<details>
+<summary>Solution</summary>
 💡 Notice the trade-off: with `.model-version`, every deployment decision was a Git commit — visible in history, reviewable in a pull request. 
 With aliases, that traceability moves out of Git and into MLflow. Promoting a new champion leaves no trace in your repository. Whether that's 
 acceptable depends on your team's process — but it's worth being aware of.
----
+</details>
+
+#### Challenge 4: The Living API 🧬
+
+Right now the model is **baked into the Docker image** — downloaded once, copied in, frozen forever. But what if the API server fetched the model directly from the MLflow registry at startup instead?
+
+Look at `download_model.py`. The key logic — reading `.model-version` and calling `mlflow.sklearn.load_model()` — is only a few lines. You could move that directly into `outlier_detection_api.py`, so the server pulls the model from the registry every time it boots.
+
+You could even go further: instead of pinning a version number, use the `@champion` alias (from Challenge 3) so the server always loads whatever model is currently tagged as champion — no config file, no redeploy needed.
+
+**Don't implement this — only discuss with your partner:**
+
+- 🔗 **Dependency at runtime** — the server now needs a live connection to DagsHub every time it starts. What happens if the registry is unreachable during a deployment or a container restart?
+- 📦 **Self-containment** — the Docker image no longer carries everything it needs. Is that a problem? When?
+- 🔁 **Reproducibility** — if two instances of the API start at different times and `@champion` has moved between them, they're now running different models. How would you even notice?
+- 🔍 **Debugging** — a prediction looks wrong. With a baked-in model you check the image tag and trace it back to a Git commit and an MLflow run. With a live-loaded model, where do you even start?
+- ⚡ **Startup time** — downloading a model file on every container boot adds latency. In a scaled environment spinning up many instances, what does that mean?
+- ✅ **The upside** — promoting a new model to production is instant: update the alias, restart the server. No Docker build, no CI pipeline, no image push needed. When might that trade-off be worth it?
 
 ## 🤖 Exercise 6: The Training Pipeline
 
