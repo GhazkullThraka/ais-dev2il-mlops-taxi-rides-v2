@@ -1,0 +1,6 @@
+outs:
+- md5: 61b7b246c92f36b4a856d2931e81a1e4
+  size: 46396050
+  isexec: true
+  hash: md5
+  path: taxi-rides-training-data.parquet
